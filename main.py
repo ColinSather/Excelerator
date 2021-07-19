@@ -76,23 +76,15 @@ class CSV_Controller:
         return data
 
     def add_to_main(self, main_file, in_file):
-        # Append selected file to the master file in a new dataframe
+        # read main file and in_file as new dataframes
         a = pd.read_csv(main_file, index_col=False)
         b = pd.read_csv(in_file, index_col=False)
-
-        len_row = len(b.loc[0])
-        b.drop([0, len_row])
-        out = a.append(b, ignore_index=False)
-
-        #formatter = ExcelFormat()
-        #formatter.format_cols(out)
+        frames = [a, b]
+        result = pd.concat(frames)
+        pd.write_csv(result)
 
         # TODO: use supervised learning libs to match categories (optional).
         #find_categories(b)
-
-        with open(main_file, 'a', encoding='utf-8', newline = '\n') as f:
-            out.to_csv(f, index=False)
-            f.close()
 
 
 # MAIN EXECUTION SECTION
@@ -126,7 +118,10 @@ if __name__ == "__main__":
     cc = CSV_Controller()
     export_dir = config._sections["Exports"]["path"]
     accounts = config._sections["Accounts"]
+    
     active_account = None
+    active_export = None
+    active_exports = []
 
     while flag:
         x = input("E-Shell> ")
@@ -138,6 +133,8 @@ if __name__ == "__main__":
             if x.split()[1] in accounts.keys():
                 active_account = x.split()[1]
                 print("switched to", x.split()[1])
+            else:
+                print("Invalid `use` command, please specify a correct account.")
                 
         elif x == "sort":
             # temp function
@@ -145,15 +142,19 @@ if __name__ == "__main__":
             tmp = cc.date_sort(export_dir+exports[0])
             print(tmp)
 
-        elif x == "add":
-            main = config._sections["Accounts"]["test1"]
-            in_file = config._sections["Accounts"]["test2"]
-            cc.add_to_main(main, in_file)
+        elif "add" in x.split():
+            if x.split()[1]:
+                selected_index = int(x.split()[1])
+                active_export = active_exports[selected_index]
+                cc.add_to_main(active_account, active_export)
+            else:
+                print("Invalid use of `add` command, please specify a correct export name.")
 
         elif x == "exports" or x == "show exports":
-            counter = 1
+            counter = 0
             for file in os.listdir(export_dir):
                 print("[{}]".format(counter), file)
+                active_exports.append(export_dir+file)
                 counter += 1
 
         elif x == "exit":

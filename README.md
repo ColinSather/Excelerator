@@ -4,9 +4,9 @@ Example of a config file `config/config.ini`, note how file paths do not have qu
 
 ```
 [Exports]
-path = C:\\Users\\username\\path\\to\\Exports
+path = C:\\Users\\csather\\Projects\\Excelerator\\examples\\exports\\
 
 [Accounts]
-checking = C:\\Users\\username\\path\\to\\Master_Book_Checking.csv
-savings = C:\\Users\\username\\path\\to\\Master_Book_Savings.csv
+checking = C:\\Users\\csather\\Projects\\Excelerator\\examples\\test.csv
+savings = C:\\Users\\csather\\Projects\\Excelerator\\examples\\test2.csv
 ```
