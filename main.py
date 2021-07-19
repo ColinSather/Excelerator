@@ -1,7 +1,11 @@
 import pandas as pd
-import configparser
-import sys, os, platform, itertools
+from configparser import ConfigParser
+from datetime import datetime
+import sys, os, csv
+
 from excel_convert import ExcelFormat
+
+from pathlib import Path # if using Windows
 
 title = r"""
  /$$$$$$$$                               /$$                                /$$                        
@@ -76,7 +80,7 @@ def run_merge():
         given_path = "./config/config.ini"
         config_file_path = os.path.abspath(os.path.join(cwd, given_path))
 
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(config_file_path)
         master_file = config["PATHS"]["MasterFile"]
         output_file = config["PATHS"]["OutputFile"]
@@ -94,27 +98,56 @@ def run_merge():
         return False
 
 
+class CSV_Controller:
+    def date_sort(self, file_path):
+        data = csv.reader(open(file_path,'r'))
+        data = sorted(data, key = lambda row: datetime.strptime(row[0], "%d-%b-%y"))
+        return data
+
 
 # MAIN EXECUTION SECTION
 if __name__ == "__main__":
-    try:
-        run_merge()
-        # TODO: Assign categories to the appended transactions
-        print("SUCCESS: The file", sys.argv[1], "has been appended to the master file.")
-        print("\n[WIP] The following transaction descriptions have been assigned to these categories...")
+    # Commented out code was used when Excelerator could be ran from Windows context menu
 
-        # CLI options: open, history, shell
-        print("\nADDITIONAL OPERATIONS:")
-        print("open - opens the output file in your default spreadsheet program.")
-        print("history - shows files and dates that have been appended to the master file.")
-        print("quit - exits this program or you can simply hit the enter key.")
-        menu_option = input("Type one of the above options...\n")
+    # run_merge() # overly confusing method
+    # TODO: Assign categories to the appended transactions
+    # print("SUCCESS: The file", sys.argv[1], "has been appended to the master file.")
+    # print("\n[WIP] The following transaction descriptions have been assigned to these categories...")
 
-        if menu_option == "open" and platform.system() == "Windows":
-            os.startfile(main_output_file)
-        if menu_option == "quit":
+    # CLI options: open, history, shell
+    # print("\nADDITIONAL OPERATIONS:")
+    # print("open - opens the output file in your default spreadsheet program.")
+    # print("history - shows files and dates that have been appended to the master file.")
+    # print("quit - exits this program or you can simply hit the enter key.")
+    # menu_option = input("Type one of the above options...\n")
+    # 
+    # if menu_option == "open" and platform.system() == "Windows":
+    #     os.startfile(main_output_file)
+    # if menu_option == "quit":
+    #     print("Bye.")
+
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    given_path = "./config/config.ini"
+    config_file_path = os.path.abspath(os.path.join(cwd, given_path))
+    config = ConfigParser()
+    config.read(config_file_path)
+    flag = True
+
+    while flag:
+        x = input("E-Shell> ")
+        if x == "accounts" or x == "show accounts":
+            print(config._sections["Accounts"])
+        elif x == "sort":
+            # temp function
+            cc = CSV_Controller()
+            tmp = cc.date_sort("temp_input/test.csv")
+            print(tmp)
+        elif x == "exports" or x == "show exports":
+            e = config._sections["Exports"]["path"]
+            counter = 1
+            for file in os.listdir(e):
+                print("[{}]".format(counter), file)
+                counter += 1
+        elif x == "exit":
             print("Bye.")
-    except:
-        menu_option = input("The program failed for some reason, type enter to confirm.\n")
-        if menu_option == "quit":
-            print("Bye.")
+            flag = False
