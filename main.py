@@ -125,12 +125,20 @@ if __name__ == "__main__":
 
     cc = CSV_Controller()
     export_dir = config._sections["Exports"]["path"]
+    accounts = config._sections["Accounts"]
+    active_account = None
 
     while flag:
         x = input("E-Shell> ")
         if x == "accounts" or x == "show accounts":
-            print(config._sections["Accounts"])
+            for key in accounts.keys():
+                print(key)
 
+        elif "use" in x.split():
+            if x.split()[1] in accounts.keys():
+                active_account = x.split()[1]
+                print("switched to", x.split()[1])
+                
         elif x == "sort":
             # temp function
             exports = os.listdir(export_dir)
