@@ -2,6 +2,7 @@ import pandas as pd
 from configparser import ConfigParser
 from datetime import datetime
 import sys, os, csv
+from cmd import Cmd
 
 from excel_convert import ExcelFormat
 
@@ -70,14 +71,26 @@ print(subtitle)
 
 
 class CSV_Controller:
-    
+    active_import = None
+    available_imports = []
+
     def load_import_files(self, dir):
         # load available files in config parser imports
-        available_imports = []
         for file in os.listdir(dir):
-            available_imports.append(file)
-        return available_imports
+            self.available_imports.append(file)
+
+        if len(self.available_imports) == 0:
+            print("No files in: ", dir, "\n")
+        else:
+            self.active_import = self.available_imports[0]
+            counter = 0
+            for file in self.available_imports:
+                print("[{}]".format(counter), file)
+                counter += 1
+            print()
+        return self.available_imports
         
+
     def date_sort(self, file_path):
         # Sort by the date field in the first column (cannot change col 1 of csv schema)
         data = pd.read_csv(file_path)
@@ -98,35 +111,33 @@ class CSV_Controller:
         # TODO: match categories or at least make it easier to input
         pass
 
-    def display_csv(self, df):
+    def display_csv(self, file_path, option=None):
         # TODO: display csv file, similar to GitHub's style
+        data = pd.read_csv(file_path)
+        #if option == "is null":
+        #    return df[df[''] == ''].index
+        return data
+
+class EShell:
+    prompt = "E-Shell> "
+    accounts = None
+
+    def do_ls(self, inp):
+        if inp == "ls":
+            for key in accounts.keys():
+                print(key)
+
+    def do_type(self):
         pass
 
+    def do_use(self):
+        pass
 
 # MAIN EXECUTION SECTION
 if __name__ == "__main__":
-    # Commented out code was used when Excelerator could be ran from Windows context menu,
-    # I may bring this feature back.
-
-    # run_merge() # overly confusing method
-    # TODO: Assign categories to the appended transactions
-    # print("SUCCESS: The file", sys.argv[1], "has been appended to the master file.")
-    # print("\n[WIP] The following transaction descriptions have been assigned to these categories...")
-
-    # CLI options: open, history, shell
-    # print("\nADDITIONAL OPERATIONS:")
-    # print("open - opens the output file in your default spreadsheet program.")
-    # print("history - shows files and dates that have been appended to the master file.")
-    # print("quit - exits this program or you can simply hit the enter key.")
-    # menu_option = input("Type one of the above options...\n")
-    # 
-    # if menu_option == "open" and platform.system() == "Windows":
-    #     os.startfile(main_output_file)
-    # if menu_option == "quit":
-    #     print("Bye.")
-
     cwd = os.path.abspath(os.path.dirname(__file__))
-    given_path = "./config.ini"
+    #given_path = "./config.ini"
+    given_path = "./config/config.ini"
     config_file_path = os.path.abspath(os.path.join(cwd, given_path))
 
     config = ConfigParser()
@@ -135,52 +146,41 @@ if __name__ == "__main__":
     accounts = config._sections["accounts"]
     acct_keys = list(accounts.keys())
     active_account = acct_keys[0]
-    active_import = None
-    available_imports = []
 
     print("Available Imports:")
     cc = CSV_Controller()
     ai = cc.load_import_files(imports_dir)
-    
-    if len(ai) == 0:
-        print("No files in: ", imports_dir, "\n")
-    else:
-        active_import = ai[0]
-        counter = 0
-        for file in ai:
-            print("[{}]".format(counter), file)
-            counter += 1
-        print()
 
     flag = True
 
     while flag:
         x = input("E-Shell> ")
-        if x == "ls" or x == "show accounts":
+        if x == "ls":
             for key in accounts.keys():
                 print(key)
+        elif x == "data":
+            data = cc.display_csv(accounts[active_account])
+            print(data)
 
         elif "use" in x.split():
             if x.split()[1] in accounts.keys():
                 active_account = x.split()[1]
                 print("switched to", x.split()[1])
-            
-            elif x.split()[1] in ai:
-                active_import = x.split()[1]
-                print("switched import to", x.split()[1])
             else:
-                print("Invalid `use` command, please specify a correct account or file to import.")
+                print("something went wrong...")
                 
         elif x == "sort":
             # This function always sorts the file in use
             cc.date_sort(accounts[active_account])
+            data = cc.display_csv(accounts[active_account])
+            print(data)
 
         elif "add" in x.split():
             if x.split()[1]:
                 selected_index = int(x.split()[1])
-                in_file = imports_dir+active_import
+                in_file = imports_dir+cc.active_import
                 cc.add_to_main(accounts[active_account], in_file)
-                ai.remove(active_import)
+                ai.remove(cc.active_import)
             else:
                 print("Invalid use of `add` command, please specify a correct export name.")
 
@@ -193,3 +193,25 @@ if __name__ == "__main__":
         elif x == "exit":
             print("Bye.")
             flag = False
+
+
+
+# Commented out code was used when Excelerator could be ran from Windows context menu,
+# I may bring this feature back.
+
+# run_merge() # overly confusing method
+# TODO: Assign categories to the appended transactions
+# print("SUCCESS: The file", sys.argv[1], "has been appended to the master file.")
+# print("\n[WIP] The following transaction descriptions have been assigned to these categories...")
+
+# CLI options: open, history, shell
+# print("\nADDITIONAL OPERATIONS:")
+# print("open - opens the output file in your default spreadsheet program.")
+# print("history - shows files and dates that have been appended to the master file.")
+# print("quit - exits this program or you can simply hit the enter key.")
+# menu_option = input("Type one of the above options...\n")
+# 
+# if menu_option == "open" and platform.system() == "Windows":
+#     os.startfile(main_output_file)
+# if menu_option == "quit":
+#     print("Bye.")
