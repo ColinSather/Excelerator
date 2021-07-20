@@ -70,26 +70,43 @@ print(subtitle)
 
 
 class CSV_Controller:
+    
+    def load_import_files(self, dir):
+        # load available files in config parser imports
+        available_imports = []
+        for file in os.listdir(dir):
+            available_imports.append(file)
+        return available_imports
+        
     def date_sort(self, file_path):
+        # Sort by the date field in the first column (cannot change col 1 of csv schema)
         data = pd.read_csv(file_path)
-        data.sort_values(by = 'Date', ascending = False, inplace = True)
-        return data
+        cols = list(data.columns)
+        data.sort_values(by = cols[0], ascending = False, inplace = True)
+        data.to_csv(file_path, index=False)
 
     def add_to_main(self, main_file, in_file):
         # read main file and in_file as new dataframes
         a = pd.read_csv(main_file, index_col=False)
         b = pd.read_csv(in_file, index_col=False)
         frames = [a, b]
-        result = pd.concat(frames)
-        pd.write_csv(result)
+        result = pd.concat(frames, ignore_index=True)
+        result.to_csv(main_file, index=False)
+        os.remove(in_file)
+        
+    def assign_categories(self, df):
+        # TODO: match categories or at least make it easier to input
+        pass
 
-        # TODO: use supervised learning libs to match categories (optional).
-        #find_categories(b)
+    def display_csv(self, df):
+        # TODO: display csv file, similar to GitHub's style
+        pass
 
 
 # MAIN EXECUTION SECTION
 if __name__ == "__main__":
-    # Commented out code was used when Excelerator could be ran from Windows context menu
+    # Commented out code was used when Excelerator could be ran from Windows context menu,
+    # I may bring this feature back.
 
     # run_merge() # overly confusing method
     # TODO: Assign categories to the appended transactions
@@ -109,23 +126,37 @@ if __name__ == "__main__":
     #     print("Bye.")
 
     cwd = os.path.abspath(os.path.dirname(__file__))
-    given_path = "./config/config.ini"
+    given_path = "./config.ini"
     config_file_path = os.path.abspath(os.path.join(cwd, given_path))
+
     config = ConfigParser()
     config.read(config_file_path)
-    flag = True
+    imports_dir = config._sections["imports"]["path"]
+    accounts = config._sections["accounts"]
+    acct_keys = list(accounts.keys())
+    active_account = acct_keys[0]
+    active_import = None
+    available_imports = []
 
+    print("Available Imports:")
     cc = CSV_Controller()
-    export_dir = config._sections["Exports"]["path"]
-    accounts = config._sections["Accounts"]
+    ai = cc.load_import_files(imports_dir)
     
-    active_account = None
-    active_export = None
-    active_exports = []
+    if len(ai) == 0:
+        print("No files in: ", imports_dir, "\n")
+    else:
+        active_import = ai[0]
+        counter = 0
+        for file in ai:
+            print("[{}]".format(counter), file)
+            counter += 1
+        print()
+
+    flag = True
 
     while flag:
         x = input("E-Shell> ")
-        if x == "accounts" or x == "show accounts":
+        if x == "ls" or x == "show accounts":
             for key in accounts.keys():
                 print(key)
 
@@ -133,28 +164,30 @@ if __name__ == "__main__":
             if x.split()[1] in accounts.keys():
                 active_account = x.split()[1]
                 print("switched to", x.split()[1])
+            
+            elif x.split()[1] in ai:
+                active_import = x.split()[1]
+                print("switched import to", x.split()[1])
             else:
-                print("Invalid `use` command, please specify a correct account.")
+                print("Invalid `use` command, please specify a correct account or file to import.")
                 
         elif x == "sort":
-            # temp function
-            exports = os.listdir(export_dir)
-            tmp = cc.date_sort(export_dir+exports[0])
-            print(tmp)
+            # This function always sorts the file in use
+            cc.date_sort(accounts[active_account])
 
         elif "add" in x.split():
             if x.split()[1]:
                 selected_index = int(x.split()[1])
-                active_export = active_exports[selected_index]
-                cc.add_to_main(active_account, active_export)
+                in_file = imports_dir+active_import
+                cc.add_to_main(accounts[active_account], in_file)
+                ai.remove(active_import)
             else:
                 print("Invalid use of `add` command, please specify a correct export name.")
 
-        elif x == "exports" or x == "show exports":
+        elif x == "imports" or x == "show imports":
             counter = 0
-            for file in os.listdir(export_dir):
+            for file in ai:
                 print("[{}]".format(counter), file)
-                active_exports.append(export_dir+file)
                 counter += 1
 
         elif x == "exit":

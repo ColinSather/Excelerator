@@ -31,3 +31,6 @@ james,21,m
 lauren,19,f
 simon,57,m
 ```
+
+## Tracking Concatenations
+Would tracking all concatenations made to the main file be a good idea? It would be nice to have a backup process in the case our script fails. We can implement this history in a huge json file where each element is a csv list import.
